@@ -23,13 +23,13 @@
   (info "Resetting html")
   (try (do (dom/remove! (sel1 :#top-nav))
            (dom/remove! (sel1 :#main)))
-       (catch js/Error e nil))
+       (catch js/Error e (error e)))
   (init-html!)
   (reset! (:events ev/global-event-loop) [])
   (ev/bind-event! ev/global-event-loop
-                  {:selector "#logo"
+                  {:selector "h1#logo"
                    :event "click"
-                   :callback #(debug "Callback #logo click" %)}
+                   :callback #(debug "Callback h1#logo click" %)}
                   :to-dom? true
                   :parent-el (.-body js/document)))
 
