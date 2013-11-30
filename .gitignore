@@ -15,4 +15,5 @@ pom.xml.asc
 .nrepl-port
 .emacs.*
 /out
-/public/scripts/app.js
+/resources/public/scripts/app.js
+/resources/public/scripts/app.js.map
