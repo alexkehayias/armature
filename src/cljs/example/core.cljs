@@ -1,8 +1,9 @@
 (ns armature.example.core
   (:use [armature.logging :only [debug info warn error]])
-  (:require [dommy.core :as dom]
-            [armature.events :as ev])
-  (:use-macros [dommy.macros :only [node sel sel1]]))
+  (:use-macros [dommy.macros :only [node sel sel1]])
+  (:require [clojure.browser.repl :as repl]
+            [dommy.core :as dom]
+            [armature.events :as ev]))
 
 
 (def top-nav

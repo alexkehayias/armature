@@ -3,8 +3,6 @@
 (def log-level (atom :info))
 
 ;; TODO make sure that the client supports console.log
-;; TODO make a macro that takes any number of args and applies it to
-;; .log js/console
 ;; TODO respect the current logging level
 (defn log [level & args]
   (let [level-str (-> (str level)

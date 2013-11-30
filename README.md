@@ -4,9 +4,9 @@
 
 This branch explores declaring dom events using Backbone style scoping and processing them in event loops using core.async channels.
 
-# Example
+# Running the Example
 
-Load the armature.dev namespace. This will start a browser connected repl. Follow the instructions printed in the repl to open it in the browser. Load the armature.example.core namespace in the new ClojureScript repl. 
+First run `lein cljsbuild once`. In a repl, evaluate the armature.server namespace. This will start a server on localhost 9000 and automatically enter you into a browser connected repl. In your browser, navigate to http://127.0.0.1:9000/app to load the example and connect the browser repl.
 
 By default, a global event loop is declared `global-event-loop` and clicking on the logo will show a message in the js console (assuming you're on a modern browser). Logging is enabled on all events declared/emitted/matched so you can see exactly what it's doing.
 

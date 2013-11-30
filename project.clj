@@ -1,5 +1,5 @@
 (defproject armature "0.1.0-SNAPSHOT"
-  :description "Frontend framework for ClojureScript"
+  :description "Frontend library for handline events in ClojureScript"
   :source-paths ["src/clj" "src/cljs"]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-1978"]
@@ -8,8 +8,7 @@
                  [compojure "1.1.5"]
                  [enlive "1.1.1"]
                  [prismatic/dommy "0.1.1"]]
-  :profiles {:dev {:repl-options {:init-ns armature.server}
-                   :plugins [[com.cemerick/austin "0.1.1"]
+  :profiles {:dev {:plugins [[com.cemerick/austin "0.1.1"]
                              [lein-cljsbuild "0.3.2"]]
                    :cljsbuild {:builds [{:source-paths ["src/cljs"]
                                          :compiler {:output-to "target/classes/public/app.js"
