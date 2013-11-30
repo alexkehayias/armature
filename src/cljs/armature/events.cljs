@@ -7,13 +7,15 @@
 (defn dom-event->chan-callback
   "Return a fn that takes an argument for the event payload
    that enqueues onto the channel ch"
-  [ch event-id selector]
-  #(go (>! ch {:selector selector :trigger event-id :payload %})))
+  [ch-name ch event-id selector]
+  #(go
+    (debug "Emitted" event-id "on" selector "in channel" ch-name)
+    (>! ch {:selector selector :trigger event-id :payload %})))
 
 (defn emit-event
   "Emit the event to the channel"
-  [ch event-id selector payload]
-  (let [callback (dom-event->chan-callback ch event-id selector)]
+  [ch-name ch event-id selector payload]
+  (let [callback (dom-event->chan-callback ch-name ch event-id selector)]
     (callback payload)))
 
 (defn dom-event->chan!
@@ -95,12 +97,12 @@
    :bindings - A vector of dicts describing an event binding
    :parent-el - An HTML element in which to scope each event binding
   "
-  [ch bindings parent-el]
+  [ch-name ch bindings parent-el]
   (for [b bindings
         el (scoped-sel parent-el (:selector b))]
     (let [{:keys [event selector]} b
           ;; adds a callback to enqueue the event to ch
-          callback (dom-event->chan-callback ch event selector)]
+          callback (dom-event->chan-callback ch-name ch event selector)]
       (debug "binding event" event "to" selector)
       ;; Check the event to see if it matches
       ;; listenable dom events
@@ -116,8 +118,8 @@
   [name bindings parent-el & deps]
   (debug "mk-event-loop" "name:" name "bindings" bindings "parent" parent-el)
   (let [bindings-atom (atom bindings)
-        ch (mk-loop name bindings-atom)
-        updated-bindings (bind-dom-events! ch bindings parent-el)]
+        ch (chan)
+        updated-bindings (bind-dom-events! name ch bindings parent-el)]
     (reset! bindings-atom updated-bindings)
     {:name name :channel ch :events bindings-atom}))
 
@@ -141,7 +143,10 @@
          :parent-el parent-el)
   (swap! (:events event-loop)
          #(into % (if (and to-dom? (boolean parent-el))
-                    (bind-dom-events! (:channel event-loop) [binding] parent-el)
+                    (bind-dom-events! (:name event-loop)
+                                      (:channel event-loop)
+                                      [binding]
+                                      parent-el)
                     [binding]))))
 
 (defn unbind-event!
