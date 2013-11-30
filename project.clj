@@ -11,7 +11,7 @@
   :profiles {:dev {:plugins [[com.cemerick/austin "0.1.1"]
                              [lein-cljsbuild "0.3.2"]]
                    :cljsbuild {:builds [{:source-paths ["src/cljs"]
-                                         :compiler {:output-to "target/classes/public/app.js"
+                                         :compiler {:output-to "public/scripts/app.js"
                                                     :optimizations :simple
                                                     :pretty-print true}}]}}})
 
