@@ -31,7 +31,8 @@
                    :event "click"}
                   :to-dom? true
                   :parent-el (.-body js/document))
-  (ev/consume-every (:channel ev/global-event-loop)
+  (ev/consume-every (:name ev/global-event-chan)
+                    (:channel ev/global-event-chan)
                     "click" "h1#logo"
                     #(debug %)))
 

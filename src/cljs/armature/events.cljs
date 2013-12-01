@@ -10,7 +10,7 @@
   [ch-name ch event-id selector]
   #(go
     (debug "Emitted" event-id "on" selector "in channel" ch-name)
-    (>! ch {:selector selector :trigger event-id :payload %})))
+    (>! ch {:selector selector :event-id event-id :payload %})))
 
 (defn emit-event
   "Emit the event to the channel"
@@ -30,28 +30,6 @@
    that was registered"
   [el event-id callback]
   (.removeEventListener el event-id callback false))
-
-(defn trigger-events [event bindings]
-  (doseq [b bindings]
-    (let [callback (:callback b)
-          event-name (:event b)
-          selector (:selector b)]
-)))
-
-(defn mk-loop
-  "Make an event loop that call callbacks when an event trigger 
-   triggers is emitted to the loop. Block until any dependent 
-   event loops emit.
-
-   Returns a channel"
-  [name bindings & deps]
-  (debug "Creating event loop" name "with bindings" bindings)
-  (let [ch (chan)]
-    (go (loop [event (<! ch)]
-          (debug "Emitted" event)
-          (trigger-events event @bindings)
-          (recur (<! ch))))
-    ch))
 
 (defn scoped-sel
   "Get all elements that match the selector in scope of the element el"
@@ -100,7 +78,7 @@
     (let [{:keys [event selector]} b
           ;; adds a callback to enqueue the event to ch
           callback (dom-event->chan-callback ch-name ch event selector)]
-      (debug "binding event" event "to" selector)
+      (debug "Binding event" event "to" selector "on" ch-name)
       ;; Check the event to see if it matches
       ;; listenable dom events
       (when (some #{event} dom-event-list)
@@ -120,9 +98,9 @@
     (reset! bindings-atom updated-bindings)
     {:name name :channel ch :events bindings-atom}))
 
-(defn close-event-loop
+(defn close-event-chan
   "Close an event loop and clean up dom listeners"
-  [event-loop bindings])
+  [event-chan bindings])
 
 (defn bind-event!
   "Mutate the event bindings for the given channel hashmap by adding the 
@@ -130,18 +108,18 @@
 
    pass :to-dom? true if you want to also bind to the dom
   "
-  [event-loop binding
+  [event-chan binding
    & {:keys [to-dom? parent-el] :or [to-dom? false parent-el nil]}]
-  (debug "Binding event to" (:name event-loop) "\n"
+  (debug "Binding event to" (:name event-chan) "\n"
          "Args:\n"
-         :event-loop event-loop "\n"
+         :event-chan event-chan "\n"
          :binding binding "\n"
          :to-dom? to-dom? "\n"
          :parent-el parent-el)
-  (swap! (:events event-loop)
+  (swap! (:events event-chan)
          #(into % (if (and to-dom? (boolean parent-el))
-                    (bind-dom-events! (:name event-loop)
-                                      (:channel event-loop)
+                    (bind-dom-events! (:name event-chan)
+                                      (:channel event-chan)
                                       [binding]
                                       parent-el)
                     [binding]))))
@@ -149,11 +127,11 @@
 (defn unbind-event!
   "Remove an event currently bound to an event loop. 
    Calls the :remove-fn if it is present"
-  [event-loop event-id selector]
+  [event-chan event-id selector]
   (debug "Un-binding" event-id
          "from" selector
-         "in" (:name event-loop) "event loop")
-  (let [all-events (:events event-loop)
+         "in" (:name event-chan) "event loop")
+  (let [all-events (:events event-chan)
         match? #(and (= (:event %) event-id)
                      (= (:selector %) selector))
         not-match? #(or (not= (:event %) event-id)
@@ -166,12 +144,12 @@
 (defn consume-every 
   "Consume every message from channel ch that matches event-id selector
    and call fn with the message as the argument."
-  [ch event-id selector fn]
-  (debug "Consuming every" event-id selector)
+  [ch-name ch event-id selector fn]
+  (debug "Consuming every" event-id selector "on" ch-name)
   (go (loop [event (<! ch)]
-        (when (and (= (:trigger event) event-id)
+        (when (and (= (:event-id event) event-id)
                    (= (:selector event) selector))
-          (do (debug "Matched event" event-id "from" selector)
+          (do (debug "Matched event" event-id "from" selector "on" ch-name)
               (fn event)))
           (recur (<! ch)))))
 
