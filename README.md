@@ -2,7 +2,7 @@
 
 (WIP) Armature is a ClojureScript library for building event driven web applications. 
 
-This branch explores declaring dom events using Backbone style scoping and processing them in event loops using core.async channels.
+This branch explores declaring dom events and siphoning them into core.async channels. The view code then processes these messages asynchronously through queues rather than callbacks.
 
 # Running the Example
 
@@ -18,8 +18,7 @@ You can add an event to an existing event-loop by calling the `bind-event!` func
 ```
   (bind-event! global-event-loop
                {:selector "#logo"
-                :event "click"
-                :callback #(debug "Callback #logo click" %)}
+                :event "click"}
                :to-dom? true
                :parent-el (.-body js/document))
 ```

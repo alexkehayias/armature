@@ -17,7 +17,7 @@
   (dom/append! (sel1 :body) top-nav)
   (dom/append! (sel1 :body) app-main))
 
-(defn reset-html!
+(defn reset-app!
   "Reload dom first then bind events"
   []
   (info "Resetting html")
@@ -25,14 +25,14 @@
            (dom/remove! (sel1 :#main)))
        (catch js/Error e (error e)))
   (init-html!)
-  (reset! (:events ev/global-event-loop) [])
-  (ev/bind-event! ev/global-event-loop
+  (reset! (:events ev/global-event-chan) [])
+  (ev/bind-event! ev/global-event-chan
                   {:selector "h1#logo"
-                   :event "click"
-                   :callback #(debug "Callback h1#logo click" %)}
+                   :event "click"}
                   :to-dom? true
-                  :parent-el (.-body js/document)))
+                  :parent-el (.-body js/document))
+  (ev/consume-every (:channel ev/global-event-loop)
+                    "click" "h1#logo"
+                    #(debug %)))
 
-(reset-html!)
-
-
+(reset-app!)

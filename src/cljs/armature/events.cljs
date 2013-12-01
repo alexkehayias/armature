@@ -36,10 +36,7 @@
     (let [callback (:callback b)
           event-name (:event b)
           selector (:selector b)]
-      (when (and (= (:trigger event) event-name)
-                 (= (:selector event) selector))
-        (do (debug "Matched event" event-name "from" selector)
-            (callback event))))))
+)))
 
 (defn mk-loop
   "Make an event loop that call callbacks when an event trigger 
@@ -111,12 +108,12 @@
       ;; Deregister function
       (assoc b :remove-fn #(remove-dom-event! el event callback)))))
 
-(defn mk-event-loop
+(defn mk-event-chan
   "Create an event loop scoped to the given element with
    a hashmap of events and it's dependencies. Add dom listeners
    to elements that match the selector in scope of the element parent-el"
   [name bindings parent-el & deps]
-  (debug "mk-event-loop" "name:" name "bindings" bindings "parent" parent-el)
+  (debug "mk-event-chan" "name:" name "bindings" bindings "parent" parent-el)
   (let [bindings-atom (atom bindings)
         ch (chan)
         updated-bindings (bind-dom-events! name ch bindings parent-el)]
@@ -166,8 +163,20 @@
       (when remove-fn (remove-fn)))
     (swap! all-events #(filter not-match? %))))
 
-(def global-event-loop
-  (mk-event-loop
+(defn consume-every 
+  "Consume every message from channel ch that matches event-id selector
+   and call fn with the message as the argument."
+  [ch event-id selector fn]
+  (debug "Consuming every" event-id selector)
+  (go (loop [event (<! ch)]
+        (when (and (= (:trigger event) event-id)
+                   (= (:selector event) selector))
+          (do (debug "Matched event" event-id "from" selector)
+              (fn event)))
+          (recur (<! ch)))))
+
+(def global-event-chan
+  (mk-event-chan
    "global"
    []
    (.-body js/document)))
