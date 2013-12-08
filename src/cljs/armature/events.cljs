@@ -141,25 +141,6 @@
       (when remove-fn (remove-fn)))
     (swap! all-events #(filter not-match? %))))
 
-(defn mk-loop
-  "Create a loop over a channel calling fn on every message"
-  [ch f]
-  (go (loop [msg (<! ch)]
-        (f msg)
-        (recur (<! ch)))))
-
-(defn consume-every 
-  "Consume every message from channel ch that matches event-id selector
-   and call fn with the message as the argument."
-  [ch-name ch event-id selector f]
-  (debug "Consuming every" event-id selector "on" ch-name)
-  (mk-loop ch #(when (and (= (:event-id %) event-id)
-                          (= (:selector %) selector))
-                 (do (debug "Matched event" event-id
-                            "from" selector
-                            "on" ch-name)
-                     (f %)))))
-
 (def global-event-chan
   (mk-event-chan
    "global"

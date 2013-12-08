@@ -3,6 +3,7 @@
   (:use-macros [dommy.macros :only [node sel sel1]])
   (:require [clojure.browser.repl :as repl]
             [dommy.core :as dom]
+            [armature.channels :as ch]
             [armature.events :as ev]))
 
 
@@ -31,7 +32,7 @@
                    :event "click"}
                   :to-dom? true
                   :parent-el (.-body js/document))
-  (ev/consume-every (:name ev/global-event-chan)
+  (ch/consume-every (:name ev/global-event-chan)
                     (:channel ev/global-event-chan)
                     "click" "h1#logo"
                     #(debug %)))
