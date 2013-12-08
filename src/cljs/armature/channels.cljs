@@ -18,7 +18,7 @@
   "Returns a channel where messages are also enqueued to all channels
    in the subscribers atom"
   [subscribers]
-  (mk-loop (chan) (fn [msg] (map #(>! % msg) @subscribers))))
+  (mk-loop (chan) #(doseq [sub @subscribers] (go (>! sub %)))))
 
 (defn consume-every 
   "Consume every message from channel ch that matches event-id selector
@@ -31,3 +31,12 @@
                             "from" selector
                             "on" ch-name)
                      (f %)))))
+
+;; Test for fan out
+;; (def ch1 (chan))
+;; (def ch2 (chan))
+;; (def test-fan-out
+;;   (fan-out-channel (atom [ch1 ch2])))
+;; (mk-loop ch1 #(debug "ch1 recieved msg" %))
+;; (mk-loop ch2 #(debug "ch2 recieved msg" %))
+;; (go (>! test-fan-out "test"))
