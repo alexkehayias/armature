@@ -3,10 +3,6 @@
   (:require [cljs.core.async :refer [chan close! <! >!]])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
-;; TODO a fan out channel that takes a mutable list of channels to
-;; send messages to before removing the messsage
-
-
 
 (defn mk-loop
   "Create a loop over a channel calling fn on every message"
@@ -17,33 +13,44 @@
   ch)
 
 (defn fan-out-channel
-  "Returns a hashmap channel and subscribers where messages are also enqueued 
+  "Returns a channel where messages are also enqueued 
    to all channels in the subscribers atom"
   [subscribers]
-  (mk-loop (chan) #(doseq [sub @subscribers] (go (>! (:channel sub) %)))))
+  (let [in-ch (chan)
+        out-ch (chan)]
+    (mk-loop in-ch #(do (when-not (empty? @subscribers)
+                          (doseq [sub @subscribers]
+                            (debug "enqueuing" % "to" sub)
+                            (publish sub %)))
+                        ;; We always publish to the out channel
+                        (publish out-ch %)))
+    [in-ch out-ch]))
 
-(defn mk-chan []
-  (let [subscribers (atom [])
-        ch (fan-out-channel subscribers)]
-    {:channel ch :subscribers subscribers :id (gensym "chan__")}))
+(defn mk-chan [& {:keys [subscribers] :or {subscribers nil}}]
+  (let [subs (atom subscribers)
+        [in-ch out-ch] (fan-out-channel subs)]
+    {:in in-ch :out out-ch :subscribers subs :id (gensym "chan__")}))
 
 (defn subscribe
   "Subscribe ch1 to ch2 such that each message that goes to ch1 goes to ch2
    Optionally pass in a function that takes one arg used to filter messages."
-  [pub-ch sub-ch & {:keys [f] :or {f nil}}]
+  [pub-ch sub-ch]
   ;; TODO allow a filter function to control what goes in to the chan
   (swap! (:subscribers pub-ch) conj sub-ch))
 
 (defn unsubscribe
-  [pub-chan sub-chan]
-  ;; TODO filter for the id of the chan and remove it
-  ;;(swap! (:subscribers chan) sub-chan)
-  )
+  [pub-ch sub-ch]
+  (swap! (:subscribers pub-ch)
+         (fn [x]
+           (filter #(not= (:id %) (:id sub-ch)) x)))
+  sub-ch)
 
 (defn publish
   "Asnychronously publish a message, msg, to channel ch"
   [ch msg]
-  (go (>! (:channel ch) msg)))
+  (if (:in ch)
+    (go (>! (:in ch) msg))
+    (go (>! ch msg))))
 
 (defn consume-every 
   "Consume every message from channel ch that matches event-id selector
@@ -59,12 +66,26 @@
 
 
 
-;;Test for fan out
-(def pub1 (mk-chan))
+;;Test for pub sub
+
 (def ch1 (mk-chan))
 (def ch2 (mk-chan))
-(subscribe pub1 ch1)
-(subscribe pub1 ch2)
-(mk-loop (:channel ch1) #(debug "ch1 recieved msg" %))
-(mk-loop (:channel ch2) #(debug "ch2 recieved msg" %))
-(publish pub1 "test")
+(def ch3 (mk-chan))
+
+(def pub1 (mk-chan :subscribers [ch1]))
+(publish pub1 "test2")
+;; This channel already has a function called in a loop on it's input,
+;; we need to embed our function to the subscribe
+;; (consume-every "testing"
+;;                ch1
+;;                :click "#testing"
+;;                #(debug "ch1 recieved msg" %))
+
+
+(mk-loop (:out ch1) #(debug "ch1 recieved msg" %))
+;;(mk-loop (:channel ch2) #(debug "ch2 recieved msg" %))
+;;(mk-loop (:channel ch3) #(debug "ch3 recieved msg" %))
+
+;;(unsubscribe pub1 ch1)
+;;(publish pub1 "test")
+
